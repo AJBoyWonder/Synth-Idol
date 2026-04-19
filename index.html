@@ -356,6 +356,7 @@
   <h2>GAME OVER</h2>
   <div id="final-score">0</div>
   <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+  <button class="btn" id="portal-next" style="display:none; border-color:#c64bff; color:#c64bff;"></button>
 </div>
 
 <div id="game-container">
@@ -365,7 +366,7 @@
       <div class="hud-val" id="score-display">000000</div>
     </div>
     <div id="life-bar-wrap">
-      <div class="hud-lbl" style="text-align:center;">LIFE</div>
+      <div class="hud-lbl" style="text-align:center;" id="player-name">SYNTH IDOL</div>
       <div id="life-bar-track"><div id="life-bar-fill"></div></div>
     </div>
     <div class="hud-block" style="text-align:right;">
