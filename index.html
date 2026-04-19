@@ -1,19 +1,419 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>My Ordinary Game Jam Game</title>
-<link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synth Idol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #06000f;
+    --bg2: #0d0018;
+    --purple: #7f77dd;
+    --purple-dim: #534ab7;
+    --pink: #d4537e;
+    --teal: #1d9e75;
+    --coral: #d85a30;
+    --amber: #ef9f27;
+    --lane-w: 80px;
+    --hit-y: 80px;
+  }
+
+  body {
+    background: var(--bg);
+    color: #fff;
+    font-family: 'Orbitron', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #screen-title, #screen-gameover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 100;
+    gap: 24px;
+  }
+
+  #screen-title h1 {
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--purple);
+    letter-spacing: 8px;
+  }
+
+  #screen-title p {
+    color: var(--purple-dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+
+  .btn {
+    background: transparent;
+    border: 2px solid var(--purple);
+    color: var(--purple);
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    padding: 14px 40px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: var(--purple); color: #fff; }
+
+  #game-container {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #hud {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 32px;
+    background: var(--bg2);
+    border-bottom: 1px solid #7f77dd33;
+    flex-shrink: 0;
+  }
+
+  .hud-block { display: flex; flex-direction: column; gap: 2px; }
+  .hud-lbl { font-size: 9px; letter-spacing: 3px; color: var(--purple-dim); font-family: 'Share Tech Mono', monospace; }
+  .hud-val { font-size: 24px; font-weight: 700; color: var(--purple); }
+  .hud-val.combo { color: var(--pink); }
+
+  #life-bar-wrap {
+    flex: 1;
+    margin: 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  #life-bar-track {
+    height: 4px;
+    background: #1a0030;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #life-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--pink);
+    border-radius: 2px;
+    transition: width 0.2s;
+  }
+
+  #play-area {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #lanes {
+    display: flex;
+    flex: 1;
+    position: relative;
+  }
+
+  .lane {
+    flex: 1;
+    border-right: 1px solid #7f77dd18;
+    position: relative;
+    overflow: hidden;
+  }
+  .lane:last-child { border-right: none; }
+
+  .lane-label {
+    position: absolute;
+    bottom: calc(var(--hit-y) + 2px);
+    width: 100%;
+    text-align: center;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: #534ab766;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .hit-zone {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: var(--hit-y);
+    border-top: 2px solid #7f77dd44;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hit-key {
+    width: 52px;
+    height: 40px;
+    border-radius: 6px;
+    border: 2px solid var(--key-color, #534ab7);
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--key-color, #534ab7);
+    transition: all 0.08s;
+    pointer-events: none;
+  }
+
+  .hit-key.pressed {
+    background: var(--key-color, #534ab7);
+    color: #fff;
+    transform: scale(0.92);
+  }
+
+  .note {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .note-tap {
+    width: 52px;
+    height: 20px;
+  }
+
+  .note-hold {
+    width: 52px;
+    border-radius: 4px 4px 0 0;
+  }
+
+  #judgment-text {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 10;
+  }
+
+  #dj-board {
+    width: 100%;
+    background: var(--bg2);
+    border-top: 1px solid #7f77dd33;
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .turntable {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid var(--purple-dim);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.1s;
+  }
+  .turntable:active { cursor: grabbing; }
+  .turntable.active { border-color: var(--purple); }
+  .turntable-inner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--purple-dim);
+    pointer-events: none;
+  }
+  .turntable-line {
+    position: absolute;
+    width: 2px;
+    height: 28px;
+    background: var(--purple);
+    top: 4px;
+    left: 50%;
+    transform-origin: bottom center;
+    pointer-events: none;
+    border-radius: 1px;
+  }
+  .turntable-lbl {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--purple-dim);
+    text-align: center;
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .tt-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  .faders-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .fader-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .fader-lbl {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--purple-dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .fader-track {
+    height: 6px;
+    background: #1a0030;
+    border-radius: 3px;
+    position: relative;
+    cursor: ew-resize;
+    border: 1px solid #7f77dd22;
+  }
+
+  .fader-thumb {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: var(--purple);
+    border-radius: 3px;
+    top: -7px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    transition: background 0.1s;
+  }
+
+  .fader-thumb.active { background: var(--pink); }
+
+  .fader-track.scratch-active .fader-thumb { background: var(--pink); }
+
+  #screen-gameover h2 {
+    font-size: 40px;
+    font-weight: 900;
+    color: var(--pink);
+    letter-spacing: 6px;
+  }
+
+  #final-score {
+    font-size: 32px;
+    color: var(--purple);
+  }
+
+  .controls-hint {
+    display: flex;
+    gap: 24px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--purple-dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+</style>
 </head>
 <body>
-<div id="hud">
-  <div id="username">loading…</div>
-  <div id="peers">1 online</div>
-  <div id="hint">WASD / arrows to move — walk into a portal to travel</div>
+
+<div id="screen-title">
+  <h1>SYNTH IDOL</h1>
+  <p>DJ RHYTHM GAME</p>
+  <div class="controls-hint">
+    <span>A S D F G — TAP NOTES</span>
+    <span>DRAG TURNTABLE — SCRATCH</span>
+    <span>DRAG FADER — SLIDE</span>
+  </div>
+  <button class="btn" onclick="startGame()">START</button>
 </div>
-<canvas id="game" width="960" height="540"></canvas>
-<script src="portal.js"></script>
-<script type="module" src="game.js"></script>
+
+<div id="screen-gameover" style="display:none;">
+  <h2>GAME OVER</h2>
+  <div id="final-score">0</div>
+  <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+</div>
+
+<div id="game-container">
+  <div id="hud">
+    <div class="hud-block">
+      <div class="hud-lbl">SCORE</div>
+      <div class="hud-val" id="score-display">000000</div>
+    </div>
+    <div id="life-bar-wrap">
+      <div class="hud-lbl" style="text-align:center;">LIFE</div>
+      <div id="life-bar-track"><div id="life-bar-fill"></div></div>
+    </div>
+    <div class="hud-block" style="text-align:right;">
+      <div class="hud-lbl">COMBO</div>
+      <div class="hud-val combo" id="combo-display">0</div>
+    </div>
+  </div>
+
+  <div id="play-area">
+    <div id="lanes">
+      <div id="judgment-text"></div>
+    </div>
+  </div>
+
+  <div id="dj-board">
+    <div class="tt-wrap">
+      <div class="turntable" id="turntable-left">
+        <div class="turntable-line" id="tt-line-left"></div>
+        <div class="turntable-inner"></div>
+      </div>
+      <div class="turntable-lbl">SCRATCH</div>
+    </div>
+
+    <div class="faders-section">
+      <div class="fader-row">
+        <div class="fader-lbl">CROSSFADER</div>
+        <div class="fader-track" id="fader-cross">
+          <div class="fader-thumb" id="fader-cross-thumb" style="left:50%;"></div>
+        </div>
+      </div>
+      <div class="fader-row">
+        <div class="fader-lbl">VOLUME</div>
+        <div class="fader-track" id="fader-vol">
+          <div class="fader-thumb" id="fader-vol-thumb" style="left:70%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tt-wrap">
+      <div class="turntable" id="turntable-right">
+        <div class="turntable-line" id="tt-line-right"></div>
+        <div class="turntable-inner" style="background:var(--pink);"></div>
+      </div>
+      <div class="turntable-lbl">FX SPIN</div>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
 </body>
 </html>
