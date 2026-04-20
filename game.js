@@ -8,7 +8,8 @@
 // ------------------------------------------------------------------
 
 const incoming = Portal.readPortalParams();
-const nextTarget = await Portal.pickPortalTarget();
+let nextTarget = null;
+Portal.pickPortalTarget().then(t => { nextTarget = t; });
 
 // ------------------------------------------------------------------
 // Constants & config
